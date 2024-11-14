@@ -1,0 +1,32 @@
+# Configure the AWS provider
+provider "aws" {
+region = "ap-northeast-1" # Replace with your desired region
+access_key = "AKIAZQ3DTEV6VA2SAZMS"
+secret_key = "6l3kk4sBZvpz6dFk+HKEEPmziIJ+xHve2R9uuJ6Y"
+}
+
+
+# Data source to fetch all EC2 instance IDs
+data "aws_instances" "all" {
+  filter {
+    name   = "instance-state-name"
+    values = ["running"]
+  }
+}
+
+# Create individual data blocks for each instance using for_each
+data "aws_instance" "details" {
+  for_each = toset(data.aws_instances.all.ids)
+  instance_id = each.key
+}
+
+# Output instance IDs and associated Security Groups
+output "ec2_instance_security_groups" {
+  value = [
+    for instance in data.aws_instance.details : {
+      instance_id     = instance.id
+      security_groups = instance.vpc_security_group_ids
+    }
+  ]
+  description = "List of EC2 instances and their associated Security Groups"
+}
